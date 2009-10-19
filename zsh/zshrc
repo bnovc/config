@@ -1,0 +1,186 @@
+# window titles that dont work
+#if [[ "$TERM" == "screen" ]]; then 
+#	PROMPT="${PROMPT}%{^[kzsh^[\\%}"
+#fi
+
+setopt AUTO_CD 
+setopt CORRECT
+setopt noautomenu
+setopt nolistambiguous
+# allows better searching, 
+# "ls *.txt~foo.txt" excludes foo.txt
+# ls *(x) searchs for files that are +x
+# ls ^foo.txt excludes foo.txt
+setopt EXTENDEDGLOB
+# push directories visited automatically onto stack
+# http://prashblog.com/2008/07/07/zsh-for-productivity/
+setopt autopushd pushdminus pushdsilent pushdtohome pushdignoredups 
+
+export LSCOLORS='gxfxcxdxbxgggdabagacad'
+export CLICOLOR='true'
+export EDITOR='vim'
+
+# {{{ Aliases 
+alias -s php=vim
+alias -s css=vim
+alias -s js=vim
+alias -s cpp=vim
+alias -s gs=vim
+alias -s gsc=vim
+
+alias mxmlc='/home/bnovc/flex/bin/mxmlc'
+alias grep='egrep'
+alias ls='ls --color'
+alias ll='ls -l'
+alias la='ls -a'
+alias vi='vim'
+alias -g ...=.../...
+alias -g ....=.../../...
+alias -g .....=.../../../...
+alias d='dirs -v'
+alias h='history'
+alias updaterc='rsync -avz -e ssh bnovc@dev.bnovc.com:~/documents/config ~/documents'
+alias qs='hg qseries -s'
+# }}}
+
+# not clear how/why this works completely but it sets my prompt and spaces it by calling this fxn every time a new prompt comes up
+function precmd {
+
+    local TERMWIDTH
+    (( TERMWIDTH = ${COLUMNS} - 1 ))
+
+
+    ###
+    # Truncate the path if it's too long.
+    
+    PR_FILLBAR=""
+    PR_PWDLEN=""
+    
+		local promptsize=${#${(%):-%n - %~}}
+		local right=${#${(%):-(%?) (%y) %T}}
+    
+    if [[ "$promptsize + $right" -gt $TERMWIDTH ]]; then
+	    ((PR_PWDLEN=$TERMWIDTH - $promptsize))
+    else
+			PR_FILLBAR="\${(l.(($TERMWIDTH - ($promptsize + $right)))..${PR_HBAR}.)}"
+    fi
+
+	setopt prompt_subst
+	PR_HBAR=' '
+	PROMPT="
+$(print '%{\e[1;32m%}%n%{\e[0m%}') - $(print '%{\e[1;30m%}%~%{\e[0m%}')${(e)PR_FILLBAR}$(print '%{\e[1;30m%}(%?) (%y)%{\e[0m%}') $(print '%{\e[1;31m%}%T%{\e[0m%}')
+$ "
+}
+
+export HISTFILE=~/.history
+export HISTSIZE=1000
+export SAVEHIST=1000
+
+autoload -Uz compinit
+compinit
+# End of lines added by compinstall
+
+# cd to a file should take you to the dir that contains the file
+# courtesy of Artur Penttinen <artur@xxxxxxxxxxx>
+function cd () {
+  if [[ -f $1 ]]; then
+    builtin cd $1:h
+  else
+    builtin cd $1
+  fi
+}
+
+#function preexec () { 
+#	print -n '\ek'$1$'\e\134'&!
+#}
+#case $TERM in
+#	 xterm*)
+#		 preexec () {
+#			 print -Pn "\e]0;$1\a"
+#		 }
+#	 ;;
+#esac
+#
+autoload -U promptinit
+
+# share history across terminals
+setopt INC_APPEND_HISTORY SHARE_HISTORY
+
+# vi-esuqe key bindings
+# bindkey -v
+# this was annoying too many people who used my computer
+
+autoload -U edit-command-line
+zle -N edit-command-line
+bindkey '\ee' edit-command-line
+
+# allow ctrl+R to search my history
+bindkey '^R' history-incremental-search-backward
+
+# These options are supposed to make autocomplete better
+# take from http://prashblog.com/files/.zshrc
+zstyle ':completion:*' completer _expand _complete _correct _approximate
+zstyle ':completion:*' expand prefix suffix
+zstyle ':completion:*' file-sort access
+zstyle ':completion:*' list-suffixes true
+zstyle ':completion:*' matcher-list '' '+m:{a-z}={A-Z}' 'r:|[._-]=** r:|=**' 'l:|=* r:|=*'
+zstyle ':completion:*' preserve-prefix '//[^/]##/'
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path ~/.zsh/cache
+zstyle ':completion:*:*:kill:*' menu yes select
+zstyle ':completion:*:kill:*'   force-list always
+zstyle ':completion:::::' completer _complete _approximate
+zstyle ':completion:*:approximate:*' max-errors 2
+zstyle ':completion:*' completer _complete _prefix
+zstyle ':completion::prefix-1:*' completer _complete
+zstyle ':completion:incremental:*' completer _complete _correct
+zstyle ':completion:predict:*' completer _complete # Completion caching
+zstyle ':completion::complete:*' use-cache 1
+zstyle ':completion::complete:*' cache-path ~/.zsh/cache/$HOST # Expand partial paths
+zstyle ':completion:*' expand 'yes'
+zstyle ':completion:*' squeeze-slashes 'yes' # Include non-hidden directories in globbed file completions
+zstyle ':completion:*:complete:-command-::commands' ignored-patterns '*\~' # Separate matches into groups
+zstyle ':completion:*:matches' group 'yes' # Describe each match group.
+zstyle ':completion:*:descriptions' format "%B----  %d%b" # Messages/warnings format
+zstyle ':completion:*:messages' format '%B%U---- %d%u%b'
+zstyle ':completion:*:warnings' format '%B---- no match (%d%u%b)' # Describe options in full
+zstyle ':completion:*:options' description 'yes'
+zstyle ':completion:*:options' auto-description '%d'
+
+# Load the super duper completion stuff
+autoload -U compinit
+compinit
+autoload -U promptinit
+promptinit
+
+# up and down arrows should leave the cursor at the end of the line
+#bindkey '^[[A' down-line-or-history
+#bindkey '^[[B' down-line-or-history
+
+export PATH=$PATH:~/bin:~/lib
+
+export TERM='xterm-256color'
+
+xset b off
+xset b 0 0 0
+
+# Don't accidently reboot
+alias reboot='echo "unalias to reboot"'
+
+# switch to dvorak with ctrl+ctrl (left & right)
+# setxkbmap -layout dvorak,us -option grp:ctrls_toggle
+
+# Load all other config files
+if [[ `hostname` == *garmin* ]]
+then
+    . ~/documents/config/zsh/extra/android
+    . ~/documents/config/zsh/extra/garmin
+fi
+# . ~/documents/config/zsh/extra/*
+
+export LANG=en_US.utf-8
+
+export GIT_COMMITTER_NAME="Anthony";
+export GIT_AUTHOR_NAME="Anthony";
+export GIT_COMMITTER_EMAIL="anthony@bnovc.com";
+export GIT_AUTHOR_EMAIL="anthony@bnovc.com";
